@@ -184,8 +184,7 @@ categories: [SQL, 回显注入, 报错注入]
     +----------+----------+
     2 rows in set (0.00 sec)
     
-    mysql> select count(*),concat(version(),'+',floor(rand()*2))a from users
-    group by a;
+    mysql> select count(*),concat(version(),'+',floor(rand()*2))a from users group by a;
     +----------+----------+
     | count(*) | a        |
     +----------+----------+
