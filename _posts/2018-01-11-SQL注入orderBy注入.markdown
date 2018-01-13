@@ -41,7 +41,7 @@ ERROR 1221 (HY000): Incorrect usage of UNION and ORDER BY
 ```sql
 substatement union all substatement union all substatement [order by-clause] [limit-clause]
 ```
-# order by 注入利用
+# 0X01 order by 注入利用
 这里的利用方式无非也就两种：
 
 1. 有回显式的注入
@@ -122,7 +122,7 @@ mysql> select * from users order by if(1=1,sleep(1),1);
 ```
 可以发现这报错和时间注入在order by的情况下和where的情况下几近相似
 相比回显和盲注，在order by的场景下，似乎是盲注的利用条件要简单过回显，但是回显的情况我相信还是存在的，只是还没有遇见
-# order by 注入成熟利用
+# 0X02 order by 注入成熟利用
 比较过order by位置和where位置我相信一般的sqlmap注入指令就可以跑出这种类型的注入了，我们来看看
 ```shell
 python sqlmap.py -u "http://127.0.0.1/sqli-labs/Less-46/?sort=1" --dbms mysql --technique=BEUS
