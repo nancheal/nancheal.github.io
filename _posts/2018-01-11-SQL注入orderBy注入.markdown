@@ -1,3 +1,9 @@
+---
+layout: post
+title:  "SQL注入之order by注入"
+date:   2018-01-13 21:41:45 +0800
+categories: [SQL, order by注入]
+---
 >这一系列文章打算去总结sql注入发生的位置，并总结他们的不同，此文是第一篇order by位置的注入
 
 排序注入为何要拿出来说：
