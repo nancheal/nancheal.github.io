@@ -45,9 +45,9 @@ mysql> show variables like "character_set_%";
 +--------------------------+----------------------------------------------------------+
 8 rows in set (0.00 sec)
 ```
-从这一些列的变化中，可以发现```SET NAMES gbk;```影响的是```client -> connection -> result```这一段的链路的字符集，注意这里的链路的倒链路的编码情况也是这样的，于是为了保障不出现乱码，程序员常常把这一条链路设置为统一的字符集，比如这里的gbk。
+从这一些列的变化中，可以发现```SET NAMES gbk;```影响的是```client -> connection -> result```这一段的链路的字符集，注意这里的链路的倒链路的编码情况也是这样的，于是为了保障不出现乱码，程序员常常把这一条链路设置为统一的字符集，比如这里的gbk。
 
-2、这里还需要理解php代码层和mysql层，通常防注入脚本写在php的代码层，也就是说php在向mysql发送数据库查询语句时，查询语句中是混有恶意代码和防注入的字符的。当mysql拿到这样的查询语句时，会根据当前的字符集去处理，于是就有可能我们的恶意代码和防注入字符（比如转义斜杆）被一起识别为一个正常的字符而造成注入
+2、这里还需要理解php代码层和mysql层，通常防注入脚本写在php的代码层，也就是说php在向mysql发送数据库查询语句时，查询语句中是混有恶意代码和防注入的字符的。当mysql拿到这样的查询语句时，会根据当前的字符集去处理，于是就有可能我们的恶意代码和防注入字符（比如转义斜杆）被一起识别为一个正常的字符而造成注入
 # 0X01 有问题的字符集
 1、常见的缺陷代码如下
 ```php
@@ -86,7 +86,7 @@ GB2312、GBK、GB18030、BIG5、Shift_JIS这些都是常说的宽字节，其实
 这里觉得还是有必要去总结下什么样的字符集可能会产生宽字节注入，结论先行：
 
 1. 字符集必须为宽字节或者多字节
-2. 0x5c必须在字符集的低位有出现
+2. 0x5c必须在字符集的低位有出现
 
 这两个特征也就决定了为什么utf8不会出现这种情况。这里有必要介绍下utf8。utf8作为unicode的一种实现，是一种变长编码方式，也就是其有可能存在1～3字节的编码值，具体如下：
 
@@ -114,16 +114,16 @@ xxd unicodeTest.txt
 00000000: e4b8 a50a                                ....
 ```
 
-# 0X02 addslashes和mysql(i)_real_escape_string
-的确，这两个函数单从本意上来说都是对特殊字符进行转义，但是相比之下mysql(i)_real_escape_strint会比addslashes要来的安全，只是一般情况，如在上文提到的缺陷代码中两者是同样不安全的。
+# 0X02 addslashes和mysql(i)_real_escape_string
+的确，这两个函数单从本意上来说都是对特殊字符进行转义，但是相比之下mysql(i)_real_escape_strint会比addslashes要来的安全，只是一般情况，如在上文提到的缺陷代码中两者是同样不安全的。
 
-鸟叔在其博客[深入理解SET NAMES和mysql(i)_set_charset的区别](http://www.laruence.com/2010/04/12/1396.html)中提到了php手册中推荐mysql(i)_set_charset来声明字符集，究其原因，鸟叔提到mysql(i)_set_charset除了会完成SET NAMES的工作外还会去声明mysql->charset的值，而mysql(i)_real_escape_string转义函数会根据mysql->charset声明的字符集，使用不同的策略去转义字符，addslash不会考虑mysql->charset，所以较为危险，于是下面这种写法会安全的多
+鸟叔在其博客[深入理解SET NAMES和mysql(i)_set_charset的区别](http://www.laruence.com/2010/04/12/1396.html)中提到了php手册中推荐mysql(i)_set_charset来声明字符集，究其原因，鸟叔提到mysql(i)_set_charset除了会完成SET NAMES的工作外还会去声明mysql->charset的值，而mysql(i)_real_escape_string转义函数会根据mysql->charset声明的字符集，使用不同的策略去转义字符，addslash不会考虑mysql->charset，所以较为危险，于是下面这种写法会安全的多
 ```php
 mysql_set_charset("gbk");
 $id = mysql_real_escape_string($id);
 $sql="SELECT * FROM users WHERE id='$id' LIMIT 0,1";
 ```
-# 0X03 缺陷代码总结
+# 0X03 缺陷代码总结
 下文所使用到的代码，github地址为:[https://github.com/nancheal/multi-bytes-inject](https://github.com/nancheal/multi-bytes-inject)
 
 所使用的数据库为sqli-lab的数据库，github地址为:[https://github.com/Audi-1/sqli-labs](https://github.com/Audi-1/sqli-labs)
@@ -149,7 +149,7 @@ mysqli_free_result($result);
 mysqli_close($con);
 ?>
 ```
-这段代码就是典型的gbk“吃”字符的问题了，通过mysqli_query("set NAMES gbk")把整个数据库的传输过程中的编码都设置为了gbk，字符是在查询的过程中被吃掉了
+这段代码就是典型的gbk“吃”字符的问题了，通过mysqli_query("set NAMES gbk")把整个数据库的传输过程中的编码都设置为了gbk，字符是在查询的过程中被吃掉了
 
 poc
 ```shell
@@ -207,7 +207,7 @@ mysqli_free_result($result);
 mysqli_close($con);
 ?>
 ```
-上面这段代码的问题和第一个问题不太一样，这里的问题出在php代码层，虽然这里的利用和第一个问题的利用是一样的，但是这里的gbk“吃”字符出现在php代码中的编码转换中也就是在gbk -> utf-8之前，输入的值就经过“吃”字符，“吃”掉了转义符号，后面的流程就是一样的了
+上面这段代码的问题和第一个问题不太一样，这里的问题出在php代码层，虽然这里的利用和第一个问题的利用是一样的，但是这里的gbk“吃“字符出现在php代码中的编码转换中也就是在gbk -> utf-8之前，输入的值就经过“吃“字符，“吃”掉了转义符号，后面的流程就是一样的了
 
 poc
 ```shell
@@ -267,8 +267,8 @@ mysqli_close($con);
 ?>
 ```
 
-这里既是问题也是出在php的代码层，我们之前针对gbk编码的poc也不再生效。这里我们考虑这样一种情况在utf-8中是否存在这样一个字符，在其在被转向gbk之后，在生成的gbk编码中低位为%5c，其实这样的字符有很多，只需要找个utf-8、gbk互相转换工具一转就好了，E98CA6（‘錦’）是前辈们经常使用的一个字符，其对应的gbk为E55C
-也就是说其在有转义符号的情况下会生成这样的序列E55C5C（E5\\\）看见了吗转义符现在变成了普通的反斜杠了，注入产生
+这里既是问题也是出在php的代码层，我们之前针对gbk编码的poc也不再生效。这里我们考虑这样一种情况在utf-8中是否存在这样一个字符，在其在被转向gbk之后，在生成的gbk编码中低位为%5c，其实这样的字符有很多，只需要找个utf-8、gbk互相转换工具一转就好了，E98CA6（‘錦’）是前辈们经常使用的一个字符，其对应的gbk为E55C
+也就是说其在有转义符号的情况下会生成这样的序列E55C5C（E5\\\）看见了吗转义符现在变成了普通的反斜杠了，注入产生
 
 poc
 ```shell
@@ -306,7 +306,7 @@ pass : admin4
 ```
 4. 转义处理出现在iconv“之后”
 
-之前的3个场景虽说poc或者原理不同，但是它们有一点是相通的，那就是它们的“转义操作”都是出现在设置字符集或者字符集转换之后的，也就是说在“字符操作”之前，输入的恶意数据和过滤插入的转义字符完成了混合，也就有可能在后面的字符操作时被“吃”掉，如果“转义操作”出现在“字符操作之后”呢
+之前的3个场景虽说poc或者原理不同，但是它们有一点是相通的，那就是它们的“转义操作”都是出现在设置字符集或者字符集转换之后的，也就是说在“字符操作”之前，输入的恶意数据和过滤插入的转义字符完成了混合，也就有可能在后面的字符操作时被“吃”掉，如果“转义操作”出现在“字符操作之后”呢
 ```php
 <?php
 include_once("con.php");
@@ -352,26 +352,26 @@ pass : admin3username : 12
 pass : dhakkanusername : 14 
 pass : admin4
 ```
-但是发现了没有在我echo的地方插入的结果为```Dumb�\\\'```也就是说这里的转义符转义是成功的，问题还是出现在下面的```mysqli_query($con,"set NAMES gbk");```上，其实这里的“之后”，本质上也还是在“字符操作”前进行了转义的操作
+但是发现了没有在我echo的地方插入的结果为```Dumb�\\\'```也就是说这里的转义符转义是成功的，问题还是出现在下面的```mysqli_query($con,"set NAMES gbk");```上，其实这里的“之后”，本质上也还是在“字符操作”前进行了转义的操作
 
-其实我想了很久为什么这里会需要去```mysqli_query($con,"set NAMES gbk");```在我把这一行的代码注释掉后，再去访问链接，页面爆出了错误
+其实我想了很久为什么这里会需要去```mysqli_query($con,"set NAMES gbk");```在我把这一行的代码注释掉后，再去访问链接，页面爆出了错误
 ```shell
 Illegal mix of collations (gbk_chinese_ci,IMPLICIT) and (utf8_general_ci,COERCIBLE) for operation '='
 ```
-也就是说在取出sql语句执行结果时内部的字符集是两个不同字符集的字符串，这里先mark一下，还是有点迷糊，目前理解就是为了保证程序正常运行所以会加上这一句。
+也就是说在取出sql语句执行结果时内部的字符集是两个不同字符集的字符串，这里先mark一下，还是有点迷糊，目前理解就是为了保证程序正常运行所以会加上这一句。
 
 # 0X04 黑盒检测思路
-首先给出结论sqlmap不能跑出宽字节的注入，除非你在输入的是下面这样的数据包```python sqlmap.py -u "http://127.0.0.1/multi-bytes-inject-2.php?userName=Dumb%df"```
+首先给出结论sqlmap不能跑出宽字节的注入，除非你在输入的是下面这样的数据包```python sqlmap.py -u "http://127.0.0.1/multi-bytes-inject-2.php?userName=Dumb%df"```
 
-我的思路在sqlmap的boundaries.xml中加入带有上面这样字符的boundaries来使sqlmap能够检测宽字节注入
+我的思路在sqlmap的boundaries.xml中加入带有上面这样字符的boundaries来使sqlmap能够检测宽字节注入
 
-E98CA6这个字符不能作为我们的选择因为gbk -> utf-8的场景也就是场景2的场景下，A65C不是一个gbk字符导致iconv会报错，如下
+E98CA6这个字符不能作为我们的选择因为gbk -> utf-8的场景也就是场景2的场景下，A65C不是一个gbk字符导致iconv会报错，如下
 ```shell
 iconv(): Detected an illegal character in input string
 ```
 这里我选择的是E98E88作为检测的boundaries，可以覆盖上面的四种场景
 
-# 0X05 修复思路
+# 0X05 修复思路
 1. 设置```character_set_client=binary```原因详见[从安全角度深入理解MySQL编码转换机制](http://www.freebuf.com/articles/web/154932.html)
 
 2. 使用```mysqli_set_charset```替换```set NAMES gbk ```，尽量使用```mysqli_real_escape_string```替换```addslashes```，如果一定要使用addslashes参见第一种方法
