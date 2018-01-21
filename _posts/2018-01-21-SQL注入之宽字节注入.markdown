@@ -371,7 +371,7 @@ iconv(): Detected an illegal character in input string
 ```
 这里我选择的是E98E88作为检测的boundaries，可以覆盖上面的四种场景
 
-# 0X05 修复思路
+# 0X05 修复思路
 1. 设置```character_set_client=binary```原因详见[从安全角度深入理解MySQL编码转换机制](http://www.freebuf.com/articles/web/154932.html)
 
 2. 使用```mysqli_set_charset```替换```set NAMES gbk ```，尽量使用```mysqli_real_escape_string```替换```addslashes```，如果一定要使用addslashes参见第一种方法
