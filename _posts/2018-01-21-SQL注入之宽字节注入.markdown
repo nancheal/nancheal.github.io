@@ -2,7 +2,7 @@
 layout: post
 title:  "SQL注入之宽字节注入"
 date:   2018-01-21 21:00:45 +0800
-categories: [SQL, 宽字节注入，todo]
+categories: [SQL, 宽字节注入, todo]
 ---
 
 # 0X00 宽字节的概念
