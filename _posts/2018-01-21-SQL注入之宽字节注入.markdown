@@ -128,7 +128,7 @@ $sql="SELECT * FROM users WHERE id='$id' LIMIT 0,1";
 
 所使用的数据库为sqli-lab的数据库，github地址为:[https://github.com/Audi-1/sqli-labs](https://github.com/Audi-1/sqli-labs)
 
-1、 gbk带来的风险之mysqli_query("set NAMES gbk")
+**1、 gbk带来的风险之mysqli_query("set NAMES gbk")**
 ```php
 <?php
 include_once("con.php");
@@ -184,7 +184,7 @@ pass : dumbo
 userName : admin4 
 pass : admin4
 ```
-2、 incov带来的风险 gbk -> utf-8
+**2、 incov带来的风险 gbk -> utf-8**
 
 这个问题可能会出现在统一字符集操作的位置，比如用户输入gbk，后台数据库服务器为utf-8，这里的问题出现在转码之前
 ```php
@@ -242,7 +242,7 @@ pass : dumbo
 userName : admin4 
 pass : admin4
 ```
-3、 incov带来的风险 utf-8 -> gbk
+**3、 incov带来的风险 utf-8 -> gbk**
 
 还是刚才的内容，只是把utf-8和gbk的位置颠倒下，这里的问题出现在转码之后
 ```php
@@ -304,7 +304,7 @@ pass : dumbo
 userName : admin4 
 pass : admin4 
 ```
-4、 转义处理出现在iconv“之后”
+**4、 转义处理出现在iconv“之后”**
 
 之前的3个场景虽说poc或者原理不同，但是它们有一点是相通的，那就是它们的“转义操作”都是出现在设置字符集或者字符集转换之后的，也就是说在“字符操作”之前，输入的恶意数据和过滤插入的转义字符完成了混合，也就有可能在后面的字符操作时被“吃”掉，如果“转义操作”出现在“字符操作之后”呢
 ```php
