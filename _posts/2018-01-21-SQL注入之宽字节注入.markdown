@@ -112,8 +112,8 @@ unicodeTest.txt: UTF-8 Unicode text
 xxd unicodeTest.txt
 00000000: e4b8 a50a
 ```
-
 # 0X02 addslashes和mysql(i)_real_escape_string
+
 的确，这两个函数单从本意上来说都是对特殊字符进行转义，但是相比之下mysql(i)_real_escape_strint会比addslashes要来的安全，只是一般情况，如在上文提到的缺陷代码中两者是同样不安全的。
 
 鸟叔在其博客[深入理解SET NAMES和mysql(i)_set_charset的区别](http://www.laruence.com/2010/04/12/1396.html)中提到了php手册中推荐mysql(i)_set_charset来声明字符集，究其原因，鸟叔提到mysql(i)_set_charset除了会完成SET NAMES的工作外还会去声明mysql->charset的值，而mysql(i)_real_escape_string转义函数会根据mysql->charset声明的字符集，使用不同的策略去转义字符，addslash不会考虑mysql->charset，所以较为危险，于是下面这种写法会安全的多
