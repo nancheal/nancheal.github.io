@@ -104,7 +104,6 @@ GB2312、GBK、GB18030、BIG5、Shift_JIS这些都是常说的宽字节，其实
 1. 上文说的uft-8是1到3位的变长编码，为什么这里会有6字节的编码存在呢？其实很简单utf-8只是unicode的一种实现，目前就Wikipedia上的记录[Codepage layout](https://en.wikipedia.org/wiki/UTF-8)来看cjk主要分布在3个字节的位置，并且出现在4字节的字符较少。
 
 2. 其二，我最初的疑问是，从上面这张表来看我们的%5C是覆盖在First code point到Last code point之间的，为什么我们不能用utf-8宽字节注入呢？首先，作为万国码，unicode中是的确会出现低位为%5C的情况的，但是“unicode只是一个字符集，它只是规定了符号的二进制码，却没有去规定这段二进制代码应该如何去存储”，而我们的utf8在实现unicode存储的时候，首先找到字符对应的unicode码，比如，“严”这个字的unicode码为4E25(0100111000100101)，根据上表的规则其出现在第三行，那么就需要把这串二进制码从后往前依次填进第三行的编码规则中，也就是“严”对应的utf8的码值为11100100 10111000 10100101也就是十六进制的E4B8A5（具体细节可以看下面的实验），所以按照utf8的存储规则在其低位永远以10开头，也就永远不会出现5C(01011100)
-
 ```shell
 echo "严" >> unicodeTest.txt
 file unicodeTest.txt
@@ -112,7 +111,8 @@ unicodeTest.txt: UTF-8 Unicode text
 xxd unicodeTest.txt
 00000000: e4b8 a50a
 ```
-# 0X02 addslashes和mysql(i)_real_escape_string
+
+# 0X02 addslashes和mysql(i)_real_escape_string
 
 的确，这两个函数单从本意上来说都是对特殊字符进行转义，但是相比之下mysql(i)_real_escape_strint会比addslashes要来的安全，只是一般情况，如在上文提到的缺陷代码中两者是同样不安全的。
 
@@ -123,12 +123,12 @@ mysql_set_charset("gbk");
 $id = mysql_real_escape_string($id);
 $sql="SELECT * FROM users WHERE id='$id' LIMIT 0,1";
 ```
-# 0X03 缺陷代码总结
+# 0X03 缺陷代码总结
 下文所使用到的代码，github地址为:[https://github.com/nancheal/multi-bytes-inject](https://github.com/nancheal/multi-bytes-inject)
 
 所使用的数据库为sqli-lab的数据库，github地址为:[https://github.com/Audi-1/sqli-labs](https://github.com/Audi-1/sqli-labs)
 
-1. gbk带来的风险之mysqli_query("set NAMES gbk")
+1、 gbk带来的风险之mysqli_query("set NAMES gbk")
 ```php
 <?php
 include_once("con.php");
@@ -184,7 +184,7 @@ pass : dumbo
 userName : admin4 
 pass : admin4
 ```
-2. incov带来的风险 gbk -> utf-8
+2、 incov带来的风险 gbk -> utf-8
 
 这个问题可能会出现在统一字符集操作的位置，比如用户输入gbk，后台数据库服务器为utf-8，这里的问题出现在转码之前
 ```php
@@ -242,7 +242,7 @@ pass : dumbo
 userName : admin4 
 pass : admin4
 ```
-3. incov带来的风险 utf-8 -> gbk
+3、 incov带来的风险 utf-8 -> gbk
 
 还是刚才的内容，只是把utf-8和gbk的位置颠倒下，这里的问题出现在转码之后
 ```php
@@ -304,7 +304,7 @@ pass : dumbo
 userName : admin4 
 pass : admin4 
 ```
-4. 转义处理出现在iconv“之后”
+4、 转义处理出现在iconv“之后”
 
 之前的3个场景虽说poc或者原理不同，但是它们有一点是相通的，那就是它们的“转义操作”都是出现在设置字符集或者字符集转换之后的，也就是说在“字符操作”之前，输入的恶意数据和过滤插入的转义字符完成了混合，也就有可能在后面的字符操作时被“吃”掉，如果“转义操作”出现在“字符操作之后”呢
 ```php
