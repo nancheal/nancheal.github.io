@@ -1,0 +1,293 @@
+---
+layout: post
+title:  "定制Sqlmap"
+date:   2018-01-24 21:00:45 +0800
+categories: [Sqlmap, 二次开发]
+---
+
+> 存在sqlmap默认的payload无法检测的情况
+# 0X01 自定义payload
+## payload 加载过程
+**1、在lib/parse/payloads.py文件中**
+```python
+def loadPayloads():
+    for payloadFile in PAYLOAD_XML_FILES:
+        payloadFilePath = os.path.join(paths.SQLMAP_XML_PAYLOADS_PATH, payloadFile)
+
+        try:
+            doc = et.parse(payloadFilePath)
+        except Exception, ex:
+            errMsg = "something appears to be wrong with "
+            errMsg += "the file '%s' ('%s'). Please make " % (payloadFilePath, getSafeExString(ex))
+            errMsg += "sure that you haven't made any changes to it"
+            raise SqlmapInstallationException, errMsg
+
+        root = doc.getroot()
+        parseXmlNode(root)
+```
+payloadFilePath保存着待加载payload文件路径，并且按序加载
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/1.png)
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/2.png)
+
+**2、在lib/controller/checks.py文件中**
+
+tests变量保存着加载进的payload
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/3.png)
+
+3、还是在lib/controller/checks.py文件中
+
+结合boundary和payload两个文件生成payload
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/6.png)
+
+这段程序的逻辑主要是筛选满足三点要求的节点：
+1. level符合用户的设置值
+2. boundary和payload中clause吻合的节点
+2. boundary和payload中where吻合的节点
+
+当然，如果用户指定了--prefix/--suffix，用户指定的值的优先级是高于boundary中的值的
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/7.png)
+
+最后test与where循环生成payload
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/8.png)
+## boundary字段解释
+****
+一个典型的boundary
+```xml
+    <boundary>
+        <level>3</level>
+        <clause>1</clause>
+        <where>1,2</where>
+        <ptype>1</ptype>
+        <prefix>)</prefix>
+        <suffix>[GENERIC_SQL_COMMENT]</suffix>
+    </boundary>
+```
+
+* level 字段 - level的值越高，发送的数据包就会越多，就这个boundary来说，越高的level就体现在其提供越多可供选择的prefix和suffix。当然，越高的level也会在越多的位置进行sql注入的测试，这个时候--skip选项对于维持会话就有着重要的意义了
+
+    1. Always (<100 requests)
+    2. Try a bit harder (100-200 requests)
+    3. Good number of requests (200-500 requests)
+    4. Extensive test (500-1000 requests)
+    5. You have plenty of time (>1000 requests)
+
+* clause 字段 - payload生效的位置，支持的位置有，例如，一个union注入，可能发生在where、group by、order by后面，所以sqlmap在检测到发生在where后面，就会忽略后面的其他待检测项。so，如果不确定自定义的payload此字段该填多少，尽量填1
+
+    0. Always
+    1. WHERE / HAVING
+    2. GROUP BY
+    3. ORDER BY
+    4. LIMIT
+    5. OFFSET
+    6. TOP
+    7. Table name
+    8. Column name
+    9. Pre-WHERE (non-query)
+
+* where 字段 - 最终的payload在数据包中的呈现方式，从下面支持的值可以看出，boundary的值是根据payload中的where字段的分布而产生的，payload中的此字段在下面介绍
+
+    1. When the value of <test>'s <where> is 1
+    2. When the value of <test>'s <where> is 2
+    3. When the value of <test>'s <where> is 3
+
+* ptype 字段 - parameter value type，翻译过来就是测试参数的值的类型，支持的值有，注意这里的like指的是使用like替代 "=" 的这一种情况，如图
+
+    1. Unescaped numeric
+    2. Single quoted string
+    3. LIKE single quoted string
+    4. Double quoted string
+    5. LIKE double quoted string
+
+![](9.png)
+
+* prefix/suffix 字段 - payload 的前缀和后缀，主要指一些 '、"、）、注释符这一类的闭合符号
+
+## payload字段解释
+一个典型的payload
+```xml
+    <test>
+        <title>AND boolean-based blind - WHERE or HAVING clause</title>
+        <stype>1</stype>
+        <level>1</level>
+        <risk>1</risk>
+        <clause>1,9</clause>
+        <where>1</where>
+        <vector>AND [INFERENCE]</vector>
+        <request>
+            <payload>AND [RANDNUM]=[RANDNUM]</payload>
+        </request>
+        <response>
+            <comparison>AND [RANDNUM]=[RANDNUM1]</comparison>
+        </response>
+    </test>
+```
+* title 字段 - payload的名称，也就是在console中打印的正在测试信息
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/4.png)
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/5.png)
+* stype 字段 - sql注入的类型：
+    1. Boolean-based blind SQL injection
+    2. Error-based queries SQL injection
+    3. Inline queries SQL injection
+    4. Stacked queries SQL injection
+    5. Time-based blind SQL injection
+    6. UNION query SQL injection
+* risk 字段 - risk越大，破坏数据的可能性也就越大，只有用户指定risk级别大于payload中此字段时，此payload才会生效
+* clause 字段 - 同 boundary 中的clause字段
+* where 字段 - boundary 和 payload 结合生成的最终payload插入的位置，支持的值有：
+    1. Append the string to the parameter original value
+    2. Replace the parameter original value with a negative random integer value and append our string
+    3. Replace the parameter original value with our string
+* vector 字段 - 利用向量，用于注入过程中的各种利用，并且判断这个注入点是不是假阳性(false positive)，可能会常用到的值有
+    1. [INFERENCE] - 条件，用于各种判断
+    2. [RANDNUM] - 随机数，用于生成各种随机数
+    3. [ORIGVALUE] - 原始值，指代此位置参数的原始值
+    4. [GENERIC_SQL_COMMENT] - 注视符
+    5. [CHAR] - 随机字符
+    6. [COLSTART]/[COLSTOP] - union注入中测试列的范围
+    7. [DELIMITER_START]/[DELIMITER_STOP] - 报错注入中用来匹配开头/结尾的随机字符串
+    8. [SLEEPTIME] - 延时注入中的时间
+    9. [DELAYED] - 延时注入中泛指延时
+* request 字段 - 注入测试发送的请求
+    * request - payload 字段 - 测速使用的payload
+    * request - comment 字段 - payload之后添加的注视符
+    * request - char 字段 - 在union注入中暴力破解列所使用的字符
+    * request - columns 字段 - 指定union测速列的范围
+* response 字段 - 在响应中识别注入是否成功
+    * response - comparison 字段 - 布尔盲注，比较两次响应的不同，一次使用request中的payload，另一次使用response中的comparison
+    * response - grep 字段 - 报错注入
+    * response - time 字段 - 时间/堆叠注入，返回前等待的时间
+    * response - union 字段 - 调用unionTest()函数
+* details 字段 - 注入成功得到关于数据库、操作系统的详细信息
+    * details - dbms 字段 - 使用的数据库类型
+    * details - dbms_version - 数据库版本
+    * details - os - 操作系统
+
+# 0X02 编写自定义payload
+为了证明自定义payload存在的必要性，我们考虑下面这样一种场景
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/10.png)
+
+在这里我用分割','操作来尽量的还原出安全测试工作中可能出现的情况，只是这一步操作，我们来看看sqlmap的表现
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/11.png)
+
+0ops,it's puzzled，其实结合之前介绍的payload中的介绍我们可以很容易的解释这样的一种情况，payload中的request和response是识别这个位置是否有问题的第一步判断，一般来说“and sleep”这种出现在request中并且成功延时后，在vector中含有if的字段会做进一步的测试，但是使用if就会用到","，所以注入就会出现如图的情况，ok，接下来就是我们的自定义payload上场的时候了
+
+```python
+<root>
+    <!-- Time-based boolean tests -->
+    <test>
+        <title>MySQL &gt;= 5.0.12 AND time-based blind withOut quote</title>
+        <stype>5</stype>
+        <level>1</level>
+        <risk>1</risk>
+        <clause>1,2,3,</clause>
+        <where>1</where>
+        <vector>AND [INFERENCE] AND SLEEP([SLEEPTIME])</vector>
+        <request>
+            <payload>AND SLEEP([SLEEPTIME])</payload>
+        </request>
+        <response>
+            <time>[SLEEPTIME]</time>
+        </response>
+        <details>
+            <dbms>MySQL</dbms>
+            <dbms_version>&gt;= 5.0.12</dbms_version>
+        </details>
+    </test>
+    <!-- End of time-based boolean tests - ORDER BY, GROUP BY clause -->
+</root>
+```
+这里没有什么困难的地方，只是用AND逻辑的短路特性来替代IF语句，这里有一个问题，我们新增的payload应该怎融合到原来的payload中去，这里需要回顾下最前面payload的加载过程，lib/controller/checks.py文件中在生成payload后，进行了发包，并且进行了是否可注入的判断，我们看一下他的逻辑，这里的截图只是循环中时间注入相关的部分
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/12.png)
+
+对应到console中打印的值为
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/13.png)
+
+在console中成功打印后，程序的逻辑也就跳出了循环，来到了下面这个位置
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/14.png)
+
+在checkFalsePositives函数中打印了我们不喜欢的false postivies
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/15.png)
+
+上面这样一大段截图主要就是为了说明如果我们把自定义payload放在原来的time-blind注入之后的话，我们的payload将不会被装载进发送队列中，原因很简单，因为程序在第一步判断中就已经跳出了循环，所以我们需要把我们自定义的payload放在最前面（关于这一点不知道sqlmap开发团队是否有计划去调整这一块的逻辑，还有一种思路去修改程序加载额外的payload.xml不知是否可行），ok我们来看一下测试的效果（很明显，在我们的自定义payload进入判断假阳性的阶段，也是同样不会去加载后面的paylod的）。
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/16.png)
+
+完美，我们的自定义payload完美的适应了这样一种情况，接下来是tamper关于利用的部分
+
+# 0X03 编写自定义tamper
+这里，首先解释下为什么需要去使用tamper，有的同学可能要问了，这里不是已经证明了漏洞存在了吗，下面直接利用就好了呀，其实不是这样的，我们来看下一个简单的利用，前文说到sqlmap判断false positive和利用的都是\<vector\>节点，那么该节点中的[INFERENCE]就是这个利用的关键了,在\lib\technique文件夹下存储着各种类型注入的关键文件，观察[INFRENCE]字段在这里实际意义
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/17.png)
+
+解释下，首先取出了queries.xml文件中substring节点的query值也就是
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/18.png)
+
+我们跟踪expressionUnescaped得知其是expression的赋值来的
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/19.png)
+
+而expression又是作为bisection函数传参进来的
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/20.png)
+
+ok,我们来到bisection函数调用的地方，一路跟踪到\plugins\generic\users.py中的调用getValue方法的地方，这个文件中记录着各种各样的方法，随便看一个
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/21.png)
+
+相当与调用
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/22.png)
+
+看见了吧，一次简单getUsers操作中，讨厌的","出现了最少两次了，这也就证明了我们自定义tamper去利用sql注入的必要，当然修改queries.xml也是可行的，不过我觉得比较麻烦
+
+这里顺便介绍下整个调用的流程\lib\controller\controller.py --> \lib\controller\action.py --> \plugins\generic\users.py
+****
+tamper 加载过程
+\sqlmap.py\main() --> \lib\core\option.py\init() --> \lib\core\option.py\_setTamperingFunctions()
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/23.png)
+
+tamper 使用过程
+\lib\request\connect.py\queryPage()
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/24.png)
+
+也就是说tamper是在发包之前最终影响payload形态的关键，一个简单的tamper
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/25.png)
+
+没什么好说的，就是简单的替换，编写tamper的核心思想就是正则和替换，这里相关的字段介绍我放在了参考里，因为本文所讨论的场景sqlmap中已经给出了官方的tamper，我不打算再重复造轮子了
+# 0X04 参考
+****
+1. [Sqlmap进阶用法：定制payload加速boolean-based注入](http://www.freebuf.com/articles/71652.html)
+
+2. [Python：Sqlmap源码精读之解析xml](https://www.cnblogs.com/hongfei/archive/2014/07/22/sqlmap-xml.html)
+
+3. [SQLMap的前世今生](http://www.freebuf.com/sectool/77948.html)
+
+4. [sqlmap使用之自定义payload](http://www.beesfun.com/2017/03/31/sqlmap%E4%BD%BF%E7%94%A8%E4%B9%8B%E8%87%AA%E5%AE%9A%E4%B9%89payload/)
+
+5. [sqlmap 源码分析](https://lorexxar.cn/2016/08/18/sqlmap-source4/#%E5%BC%80%E5%A7%8B%E6%B3%A8%E5%85%A5)
+
+6. [tamper过逗号](https://www.jianshu.com/p/5d34b3722128)
+
+7. [如何编写Sqlmap的Tamper脚本?](http://payloads.online/archivers/2017-06-08/1)
+
+8. [sqlmap-tamper编写指南](https://www.jianshu.com/p/c24727dd1f7a)
+
+9. [sqlmap 进阶](https://github.com/JnuSimba/MiscSecNotes/blob/master/SQL%20%E6%B3%A8%E5%85%A5/sqlmap%20%E8%BF%9B%E9%98%B6.md)
