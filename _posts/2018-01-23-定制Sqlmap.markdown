@@ -181,7 +181,7 @@ tests变量保存着加载进的payload
 
 0ops,it's puzzled，其实结合之前介绍的payload中的介绍我们可以很容易的解释这样的一种情况，payload中的request和response是识别这个位置是否有问题的第一步判断，一般来说“and sleep”这种出现在request中并且成功延时后，在vector中含有if的字段会做进一步的测试，但是使用if就会用到","，所以注入就会出现如图的情况，ok，接下来就是我们的自定义payload上场的时候了
 
-```python
+```xml
 <root>
     <!-- Time-based boolean tests -->
     <test>
@@ -256,7 +256,7 @@ ok,我们来到bisection函数调用的地方，一路跟踪到\plugins\generic\
 看见了吧，一次简单getUsers操作中，讨厌的","出现了最少两次了，这也就证明了我们自定义tamper去利用sql注入的必要，当然修改queries.xml也是可行的，不过我觉得比较麻烦
 
 这里顺便介绍下整个调用的流程\lib\controller\controller.py --> \lib\controller\action.py --> \plugins\generic\users.py
-****
+
 tamper 加载过程
 \sqlmap.py\main() --> \lib\core\option.py\init() --> \lib\core\option.py\_setTamperingFunctions()
 
@@ -273,7 +273,6 @@ tamper 使用过程
 
 没什么好说的，就是简单的替换，编写tamper的核心思想就是正则和替换，这里相关的字段介绍我放在了参考里，因为本文所讨论的场景sqlmap中已经给出了官方的tamper，我不打算再重复造轮子了
 # 0X04 参考
-****
 1. [Sqlmap进阶用法：定制payload加速boolean-based注入](http://www.freebuf.com/articles/71652.html)
 
 2. [Python：Sqlmap源码精读之解析xml](https://www.cnblogs.com/hongfei/archive/2014/07/22/sqlmap-xml.html)
