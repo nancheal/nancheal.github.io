@@ -38,7 +38,7 @@ tests变量保存着加载进的payload
 
 ![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/3.png)
 
-3、还是在lib/controller/checks.py文件中
+**3、还是在lib/controller/checks.py文件中**
 
 结合boundary和payload两个文件生成payload
 
@@ -104,7 +104,7 @@ tests变量保存着加载进的payload
     4. Double quoted string
     5. LIKE double quoted string
 
-![](9.png)
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/9.png)
 
 * prefix/suffix 字段 - payload 的前缀和后缀，主要指一些 '、"、）、注释符这一类的闭合符号
 
@@ -271,7 +271,9 @@ tamper 使用过程
 
 ![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/25.png)
 
-没什么好说的，就是简单的替换，编写tamper的核心思想就是正则和替换，这里相关的字段介绍我放在了参考里，因为本文所讨论的场景sqlmap中已经给出了官方的tamper，我不打算再重复造轮子了
+没什么好说的，就是简单的替换，编写tamper的核心思想就是正则和替换，这里相关的字段介绍我放在了参考里，因为本文所讨论的场景sqlmap中已经给出了官方的tamper，我不打算再重复造轮子了，给出直接的利用方式
+
+![](https://lietolive-com-1255320280.cos.ap-shanghai.myqcloud.com/customSqlmap/26.png)
 # 0X04 参考
 1. [Sqlmap进阶用法：定制payload加速boolean-based注入](http://www.freebuf.com/articles/71652.html)
 
