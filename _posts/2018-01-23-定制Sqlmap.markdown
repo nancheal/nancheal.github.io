@@ -6,6 +6,7 @@ categories: [Sqlmap, 二次开发]
 ---
 
 > 存在sqlmap默认的payload无法检测的情况
+
 # 0X01 自定义payload
 ## payload 加载过程
 **1、在lib/parse/payloads.py文件中**
