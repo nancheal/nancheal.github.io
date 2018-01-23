@@ -183,7 +183,7 @@ tests变量保存着加载进的payload
 
 ```xml
 <root>
-    <!-- Time-based boolean tests -->
+    <!-- Time-based boolean tests withOut quote-->
     <test>
         <title>MySQL &gt;= 5.0.12 AND time-based blind withOut quote</title>
         <stype>5</stype>
@@ -203,7 +203,7 @@ tests变量保存着加载进的payload
             <dbms_version>&gt;= 5.0.12</dbms_version>
         </details>
     </test>
-    <!-- End of time-based boolean tests - ORDER BY, GROUP BY clause -->
+    <!-- End of time-based boolean tests - withOut quote -->
 </root>
 ```
 这里没有什么困难的地方，只是用AND逻辑的短路特性来替代IF语句，这里有一个问题，我们新增的payload应该怎融合到原来的payload中去，这里需要回顾下最前面payload的加载过程，lib/controller/checks.py文件中在生成payload后，进行了发包，并且进行了是否可注入的判断，我们看一下他的逻辑，这里的截图只是循环中时间注入相关的部分
