@@ -9,7 +9,7 @@ categories: [SQL, order by注入]
 排序注入为何要拿出来说：
 1. order by之后可用的语句有限，有必要去总结下其利用的特点
 
-2. order by位置是比较难以使用预编译去处理的，像mybatis这一类成熟的框架中也存在这种问题详见：[Mybatis框架下SQL注入漏洞面面观](https://mp.weixin.qq.com/s?src=3&amp;timestamp=1514813452&amp;ver=1&amp;signature=aort5C46VjBc1nw781Wc8WUSE8n3ErlNwWwH94BBZVSJ--3bdFc5yDWx2qD0Bs-ydAPLNqAcH01Jkncw28TLJxymWKhZAnRucnkLZHRkiQZAA89cHB0QJBKJt2TE5JCDLNrKyQuZS7YMeMtxGEX29oPP2mEI1j3ko9QBWFnNqR8=)
+2. order by位置是比较难以使用预编译去处理的，像mybatis这一类成熟的框架中也存在这种问题详见：[Mybatis框架下SQL注入漏洞面面观](http://t.cn/RcuLb2W)
  
 # 0X00 order by 的官方文档
 
