@@ -88,3 +88,5 @@ SELECT field FROM table WHERE id > 0 ORDER BY id LIMIT 1,1 PROCEDURE analyse((se
 3、[UNION Syntax](https://dev.mysql.com/doc/refman/5.7/en/union.html)
 
 4、[Using PROCEDURE ANALYSE](https://dev.mysql.com/doc/refman/5.7/en/procedure-analyse.html)
+
+5、[技术分享：Mysql注入点在limit关键字后面的利用方法](http://www.freebuf.com/articles/web/57528.html)
