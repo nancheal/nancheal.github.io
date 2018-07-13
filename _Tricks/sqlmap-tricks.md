@@ -1,7 +1,8 @@
 ---
-layout: page
+layout: post
 title: sqlmapTricks
-permalink: /sqlmap-tricks/
+date:   2018-07-13 19:42:45 +0800
+categories: [sqlmap, tricks]
 ---
 
 > 记录一些工作中经常使用的sqlmap的tricks

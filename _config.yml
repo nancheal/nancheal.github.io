@@ -39,3 +39,8 @@ plugins:
 #   - vendor/cache/
 #   - vendor/gems/
 #   - vendor/ruby/
+collections:
+  Tricks:
+    output: true
+  Notes:
+    output: true

@@ -1,7 +1,8 @@
 ---
-layout: page
+layout: post
 title: 安全测试Tricks
-permalink: /安全测试tricks/
+date:   2018-07-13 19:42:45 +0800
+categories: [安全测试, tricks]
 ---
 
 > 记录一些工作中安全测试的一些tricks
