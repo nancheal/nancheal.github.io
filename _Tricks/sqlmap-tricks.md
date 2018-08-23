@@ -30,6 +30,7 @@ categories: [sqlmap, tricks]
 - sqlmap --flush-session ; 删除session.sqlite文件
 - sqlmap --fresh-queries ; 忽略session文件
 - sqlmap --purge-output ; 删除整个output目录
+
 ### sqlmap 利用部分
 
 - need to do
