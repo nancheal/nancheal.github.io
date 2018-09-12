@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "SQL注入之limit注入"
+title:  "mysql注入之limit注入"
 date:   2018-01-25 21:41:45 +0800
-categories: [SQL注入, limit注入]
+categories: [mysql注入, limit注入]
 ---
 > 这个limit注入为何拿出来提呢？定有它的特别之处
 
